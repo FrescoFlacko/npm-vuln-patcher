@@ -1,0 +1,64 @@
+{
+  "name": "npm-vuln-patcher",
+  "version": "0.2.0",
+  "description": "A conservative npm audit fixer that prefers safe parent package upgrades and transactional validation.",
+  "type": "module",
+  "bin": {
+    "npm-vuln-patcher": "bin/npm-vuln-patcher.mjs"
+  },
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./types/index.d.ts",
+        "default": "./src/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "check": "npm run lint && npm run audit && npm test && npm run test:types && npm run pack:check && npm run test:package-types",
+    "audit": "npm audit --audit-level=low --workspaces=false",
+    "lint": "eslint .",
+    "test": "node --test",
+    "test:types": "tsc --project test-dts/tsconfig.json",
+    "test:package-types": "attw --pack . --profile esm-only --quiet",
+    "test:integration": "node --test test/integration.test.js",
+    "pack:check": "node scripts/pack-check.mjs",
+    "prepack": "npm run lint && npm run audit && npm test && npm run test:types"
+  },
+  "files": [
+    "bin",
+    "src",
+    "types",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "SUPPORT.md"
+  ],
+  "engines": {
+    "node": ">=20.19",
+    "npm": ">=10 <12"
+  },
+  "keywords": [
+    "npm",
+    "security",
+    "audit",
+    "vulnerability",
+    "dependencies"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "npm-package-arg": "^12.0.2",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "eslint": "^10.8.0",
+    "typescript": "^7.0.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
