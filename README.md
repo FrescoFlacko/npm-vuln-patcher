@@ -7,32 +7,112 @@ The default mode is a dry run. Real project files are changed only when `--apply
 ## Requirements
 
 - Node.js 20.19 or newer
-- npm lockfile version supported by the installed npm CLI
-- `package.json` and `package-lock.json` in the target directory
+- npm 10 or 11
+- `package.json` and `package-lock.json` in the target project
+- A meaningful project verification command for apply mode, such as `npm test`
 
-## Installation
+Apply mode expects a clean Git worktree by default. Non-Git projects and dirty
+worktrees require explicit opt-in flags.
+
+## Install globally with npm
+
+After the package is published to the npm registry, install it globally:
 
 ```sh
 npm install --global npm-vuln-patcher
 ```
 
-Until the package is published, install an approved tarball or local package directory instead.
+Until then, npm can install an archive of the current public GitHub repository:
+
+```sh
+npm install --global https://github.com/FrescoFlacko/npm-vuln-patcher/archive/refs/heads/main.tar.gz
+```
+
+To install from a local clone:
+
+```sh
+git clone https://github.com/FrescoFlacko/npm-vuln-patcher.git
+cd npm-vuln-patcher
+npm ci
+npm install --global .
+```
+
+Confirm that the CLI is available:
+
+```sh
+npm-vuln-patcher --help
+npm list --global --depth=0 npm-vuln-patcher
+```
+
+Re-run the appropriate install command to update the global installation.
+Remove it with:
+
+```sh
+npm uninstall --global npm-vuln-patcher
+```
+
+## Prepare a target project
+
+The CLI operates on the current working directory; it does not accept a project
+path argument. Change into the npm project that you want to inspect:
+
+```sh
+cd /path/to/your-project
+```
+
+The project must contain both `package.json` and `package-lock.json`. If it does
+not have a lockfile yet, generate one with the same npm version used by the
+project:
+
+```sh
+npm install --package-lock-only
+```
+
+Before applying changes, commit or stash existing work and identify a
+verification command that exercises the application:
+
+```sh
+git status --short
+npm test
+```
 
 ## Quick start
 
-Inspect a plan without changing files:
+Start with a dry run. This audits the current project and prints a remediation
+plan without changing its files:
 
 ```sh
 npm-vuln-patcher
 ```
 
-Apply validated changes in a clean git worktree:
+Choose a minimum severity when needed:
 
 ```sh
-npm-vuln-patcher --apply --test "npm test"
+npm-vuln-patcher --severity high
 ```
 
-Apply in a non-git project intentionally:
+For automation, request one JSON document:
+
+```sh
+npm-vuln-patcher --severity high --format json
+```
+
+Apply validated changes in a clean Git worktree. The verification command runs
+against the staged dependency tree before the real manifest and lockfile are
+updated:
+
+```sh
+npm-vuln-patcher --apply --severity high --test "npm test"
+```
+
+Replace `npm test` with the strongest practical command for the target, for
+example:
+
+```sh
+npm-vuln-patcher --apply --test "npm run lint && npm test && npm run build"
+```
+
+Apply in a non-Git project intentionally:
 
 ```sh
 npm-vuln-patcher --apply --allow-non-git --test "npm test"
@@ -48,6 +128,10 @@ npm-vuln-patcher --apply --allow-no-test
 `--allow-no-test` verifies npm resolution, the audit policy, and a clean staged
 install, but it cannot detect application-level runtime incompatibilities. The
 final report records this acknowledgement explicitly.
+
+Exit code `2` means vulnerabilities at or above the selected severity remain;
+it does not necessarily mean the CLI failed to run. See [Exit codes](#exit-codes)
+for the complete contract.
 
 ## Safety model
 
